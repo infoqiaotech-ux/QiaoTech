@@ -1,0 +1,42 @@
+/* Shared styles for QIAO TECH multi-page website */
+.page-transition { animation: fadeInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile nav drawer */
+#mobile-menu {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(11,18,41,0.97);
+  backdrop-filter: blur(20px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+#mobile-menu.open { display: flex; }
+#mobile-menu a {
+  font-size: 1.5rem;
+  font-family: 'Sora', sans-serif;
+  font-weight: 600;
+  color: #dce1ff;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: color 0.2s;
+}
+#mobile-menu a:hover, #mobile-menu a.active { color: #eac078; }
+#mobile-menu a.active { border-bottom: 2px solid #eac078; padding-bottom: 2px; }
+
+/* Active nav link */
+nav a.nav-active {
+  color: #eac078 !important;
+  border-bottom: 1px solid #eac078;
+  font-weight: 700;
+}
+
+/* Glowing card on hover */
+.glow-card:hover { box-shadow: 0 0 30px rgba(234,192,120,0.12), 0 8px 32px rgba(0,0,0,0.4); }

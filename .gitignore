@@ -1,0 +1,20 @@
+﻿# Dependencies
+node_modules/
+
+# Build scratch
+_backup/
+_qa/
+
+# One-off utility scripts
+assets/js/_gen.js
+
+# Temp / test pages
+test_bounds.html
+test_logo.html
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/

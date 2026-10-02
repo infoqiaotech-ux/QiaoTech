@@ -1,0 +1,23 @@
+{
+  "name": "qiaotech_website",
+  "version": "1.0.0",
+  "description": "",
+  "main": "extract_logo.js",
+  "scripts": {
+    "dev": "tailwindcss -i ./src/input.css -o ./assets/css/site.css --watch",
+    "build": "tailwindcss -i ./src/input.css -o ./assets/css/site.css --minify",
+    "logo": "node generate_logo_assets.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "autoprefixer": "^10.6.1",
+    "playwright": "^1.63.0",
+    "postcss": "^8.5.28",
+    "sharp": "^0.35.5",
+    "tailwindcss": "3.4"
+  }
+}
