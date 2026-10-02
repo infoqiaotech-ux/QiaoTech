@@ -346,7 +346,7 @@ function updatePanel(idx){
   viewer.querySelectorAll('.svc-dot').forEach(function(el,i){el.classList.toggle('active',i===idx);});
   viewer.querySelectorAll('.demo-env').forEach(function(el){el.classList.remove('active');});
   var demo=document.getElementById(svc.demoId);
-  if(demo){demo.classList.add('active');if(!rm)startDemo(svc.id);}
+  if(demo){demo.classList.add('active');startDemo(svc.id);}
 }
 
 function openViewer(idx){
@@ -398,7 +398,7 @@ function init(){
 
   prevBtn.addEventListener('click',function(){updatePanel((currentIdx-1+SVC.length)%SVC.length);});
   nextBtn.addEventListener('click',function(){updatePanel((currentIdx+1)%SVC.length);});
-  replayBtn.addEventListener('click',function(){if(!rm)startDemo(SVC[currentIdx].id);});
+  replayBtn.addEventListener('click',function(){startDemo(SVC[currentIdx].id);});
 
   fsBtn.addEventListener('click',function(){
     var p=document.getElementById('svc-panel');
