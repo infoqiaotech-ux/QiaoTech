@@ -39,3 +39,35 @@ Thumbs.db
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Vercel
+.vercel/
+
+# Dev/utility scripts (not part of the shipped product)
+extract_logo.js
+generate_logo_assets.js
+analyse_site.js
+fix_h1.js
+replace_icons.js
+upgrade_pages.js
+process_medallion.js
+verify_emblem.js
+split.mjs
+crop_logo*.js
+crop_perfectly.js
+find_ring.js
+
+# Backup folders
+_backup/
+
+# QA screenshots and artifacts
+_qa/
+
+# Temporary / test files
+screen.png
+code.html
+test_*.html
+test_*.js
+lint_output*.txt
+logo_pixels.txt
+**/public/test_*.html
