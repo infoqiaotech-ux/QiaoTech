@@ -45,10 +45,27 @@
       link.addEventListener('click', closeMenu);
     });
 
+    // Close on outside tap (tap on the backdrop, not inside a child interactive element)
+    menu.addEventListener('click', (e) => {
+      // Only close if the direct target is the menu overlay itself (not a child)
+      if (e.target === menu) closeMenu();
+    });
+
     // ESC to close
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && menu.classList.contains('open')) closeMenu();
     });
+
+    // Auto-close when resized to desktop (≥1024px)
+    const mql = window.matchMedia('(min-width: 1024px)');
+    function handleBreakpoint(e) {
+      if (e.matches && menu.classList.contains('open')) closeMenu();
+    }
+    if (mql.addEventListener) {
+      mql.addEventListener('change', handleBreakpoint);
+    } else {
+      mql.addListener(handleBreakpoint); // Safari <14 fallback
+    }
 
     // Focus trap inside menu
     menu.addEventListener('keydown', (e) => {

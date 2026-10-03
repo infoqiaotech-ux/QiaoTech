@@ -1,6 +1,7 @@
 /* =========================================================
    QIAO TECH — site.css source
    Stack: Tailwind CSS 3.4 CLI output + custom design system
+   Mobile-first responsive: 2026-10 revision
    ========================================================= */
 
 /* @property must be outside @layer for browser support */
@@ -20,15 +21,33 @@
     overscroll-behavior: none;
     scrollbar-width: thin;
     scrollbar-color: #eac078 #0b1229;
+    /* Prevent horizontal scroll from leaking out */
+    overflow-x: clip;
   }
   body::-webkit-scrollbar { width: 5px; }
   body::-webkit-scrollbar-track { background: #0b1229; }
   body::-webkit-scrollbar-thumb { background: #4e4639; border-radius: 3px; }
   body::-webkit-scrollbar-thumb:hover { background: #eac078; }
-  h1, h2, h3, h4 { text-wrap: balance; }
-  p { text-wrap: pretty; }
+  h1, h2, h3, h4 { text-wrap: balance; overflow-wrap: anywhere; }
+  p { text-wrap: pretty; overflow-wrap: anywhere; }
   ::selection { background: #eac078; color: #422d00; }
   :focus-visible { outline: 2px solid #eac078; outline-offset: 3px; border-radius: 2px; }
+
+  /* ── Safe-area insets for notched/folded devices ── */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* ── iOS input font-size: force ≥16px to prevent auto-zoom ── */
+  input, textarea, select {
+    font-size: 16px;
+  }
+  @media (min-width: 768px) {
+    input, textarea, select {
+      font-size: inherit;
+    }
+  }
 }
 
 /* =========================================================
@@ -76,14 +95,18 @@
     letter-spacing: 0.08em; color: rgb(209 197 180); text-decoration: none;
     padding: 0.25rem 0; position: relative;
     transition: color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    /* No background, no box — these classes only apply to desktop nav anyway */
   }
   .nav-link::after {
     content: ''; position: absolute; bottom: -1px; left: 0;
     width: 0; height: 1px; background: #eac078;
     transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .nav-link:hover { color: #eac078; }
-  .nav-link:hover::after { width: 100%; }
+  /* Hover only on true pointer devices — prevents sticky gold on mobile touch */
+  @media (hover: hover) and (pointer: fine) {
+    .nav-link:hover { color: #eac078; }
+    .nav-link:hover::after { width: 100%; }
+  }
   .nav-link.nav-active { color: #eac078; font-weight: 700; }
   .nav-link.nav-active::after { width: 100%; }
 
@@ -103,21 +126,30 @@
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 2rem;
     opacity: 0; visibility: hidden; pointer-events: none;
+    /* Safe-area padding for notches */
+    padding-top: max(1.5rem, env(safe-area-inset-top));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
     transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.35s;
+    /* Prevent any content inside from causing horizontal overflow */
+    overflow: hidden;
   }
   #mobile-menu.open { opacity: 1; visibility: visible; pointer-events: auto; }
 
-  #mobile-menu nav { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  #mobile-menu nav { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
 
   #mobile-menu nav a {
-    font-size: 1.75rem; font-family: 'Sora', sans-serif; font-weight: 600;
+    font-size: clamp(1.5rem, 6vw, 1.75rem);
+    font-family: 'Sora', sans-serif; font-weight: 600;
     color: rgb(220 225 255); text-decoration: none; letter-spacing: -0.02em;
-    padding: 0.375rem 0;
+    /* Large tap target: min 48px height */
+    min-height: 48px; display: flex; align-items: center;
+    padding: 0.5rem 2rem;
     opacity: 0; transform: translateY(16px);
     transition:
       color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
       opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
       transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    -webkit-tap-highlight-color: transparent;
   }
   #mobile-menu.open nav a { opacity: 1; transform: translateY(0); }
   #mobile-menu.open nav a:nth-child(1) { transition-delay: 0.06s; }
@@ -125,8 +157,16 @@
   #mobile-menu.open nav a:nth-child(3) { transition-delay: 0.18s; }
   #mobile-menu.open nav a:nth-child(4) { transition-delay: 0.24s; }
   #mobile-menu.open nav a:nth-child(5) { transition-delay: 0.30s; }
-  #mobile-menu nav a:hover, #mobile-menu nav a.mob-active { color: #eac078; }
-  #mobile-menu nav a.mob-active { border-bottom: 2px solid #eac078; padding-bottom: 0.125rem; }
+  /* Active page indicator */
+  #mobile-menu nav a.mob-active {
+    color: #eac078;
+    border-bottom: 2px solid #eac078;
+    padding-bottom: calc(0.5rem - 2px);
+  }
+  /* Hover only on real hover devices */
+  @media (hover: hover) and (pointer: fine) {
+    #mobile-menu nav a:hover { color: #eac078; }
+  }
 
   #mobile-menu .mobile-logo {
     opacity: 0; transform: scale(0.9);
@@ -136,8 +176,10 @@
 
   #mobile-menu .mobile-cta {
     opacity: 0; transform: translateY(12px);
+    min-height: 48px;
     transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     transition-delay: 0.35s;
+    -webkit-tap-highlight-color: transparent;
   }
   #mobile-menu.open .mobile-cta { opacity: 1; transform: translateY(0); }
 
@@ -351,6 +393,12 @@
   .aurora-orb {
     position: absolute; border-radius: 50%; filter: blur(130px);
     pointer-events: none; animation: aurora 22s ease-in-out infinite;
+    /* Clamp orb sizes on mobile so they never overflow */
+    max-width: 90vw; max-height: 90vw;
+  }
+  /* Reduce blur complexity on mobile for 60fps */
+  @media (max-width: 767px) {
+    .aurora-orb { filter: blur(80px); animation-duration: 35s; }
   }
 
   /* ── Scroll indicator ── */
@@ -385,7 +433,30 @@
   }
 
   /* ── glow-card compat ── */
-  .glow-card:hover { box-shadow: 0 0 30px rgba(234,192,120,0.12), 0 8px 32px rgba(0,0,0,0.4); }
+  @media (hover: hover) and (pointer: fine) {
+    .glow-card:hover { box-shadow: 0 0 30px rgba(234,192,120,0.12), 0 8px 32px rgba(0,0,0,0.4); }
+  }
+
+  /* ── Hamburger button tap highlight suppression ── */
+  #menu-btn, #menu-close-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* ── Header safe-area padding for notched phones ── */
+  #site-header {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* ── Service cards: touch-friendly, disable hover transform on mobile ── */
+  @media (hover: none) {
+    .service-card:hover { transform: none; }
+    .glass-card:hover { transform: none; }
+    .stat-card:hover { transform: none; }
+    .btn-primary:hover { transform: none; }
+    .btn-secondary:hover { transform: none; }
+  }
 }
 
 /* =========================================================
@@ -443,4 +514,35 @@
   .emblem-ring, .emblem-comet, .emblem-aura, .orbit-outer, .orbit-mid, .text-gradient-highlight { animation: none !important; }
   .text-gradient-highlight { background: #eac078; -webkit-background-clip: text; background-clip: text; }
   .page-transition { animation: none !important; }
+}
+
+/* =========================================================
+   6. MOBILE-FIRST MEDIA OVERRIDES
+   ========================================================= */
+
+/* Use svh (small viewport height) to fix mobile browser chrome issues */
+@supports (min-height: 100svh) {
+  .min-h-screen { min-height: 100svh; }
+}
+/* Hero section: use dvh so it fits within visible area */
+@supports (min-height: 100dvh) {
+  .min-h-\[92vh\] { min-height: 92dvh; }
+  .min-h-\[calc\(100vh-20rem\)\] { min-height: calc(100dvh - 20rem); }
+}
+
+/* On small phones (<480px), prevent emblem from overflowing */
+@media (max-width: 479px) {
+  .emblem-stage {
+    max-inline-size: min(380px, 90vw);
+  }
+  .emblem {
+    --d: clamp(180px, 72vw, 260px);
+  }
+  /* Stats strip: always 2x2 on smallest screens */
+  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Telemetry capsules on very small screens */
+@media (max-width: 639px) {
+  .telemetry-capsule { display: none; }
 }
