@@ -1,8 +1,5 @@
 {
-    "framework": "nextjs",
-    "rootDirectory": "qiaotech",
-    "buildCommand": "next build",
-    "outputDirectory": ".next",
-    "installCommand": "npm install",
-    "devCommand": "next dev"
+    "cleanUrls": true,
+    "buildCommand": "npm run build",
+    "outputDirectory": "."
 }
