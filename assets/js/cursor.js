@@ -1,18 +1,23 @@
 /*!
- * QIAO TECH — Hi-Tech Cursor
- * Zero dependencies. Self-injects its own CSS. Desktop (mouse) only.
+ * QIAO TECH — Hi-Tech Cursor (desktop mouse + mobile touch)
+ * Zero dependencies. Self-injects its own CSS.
+ * Desktop: custom pointer. Touch: finger glow, trail and tap ripple.
  * Usage: <script src="assets/js/cursor.js" defer></script>
  */
 (() => {
   'use strict';
 
-  // Mouse/trackpad devices only. Touch phones and tablets are left untouched.
-  // Two separate matchMedia calls — more reliable than a combined query string
-  // across Chrome, Safari, Firefox and hybrid touch-laptop devices.
-  const hasMouse = matchMedia('(any-pointer: fine)').matches &&
-    matchMedia('(any-hover: hover)').matches;
-  if (!hasMouse) return;
   if (document.getElementById('qt-root')) return;
+
+  // Mouse-capable device (desktop / laptop) and touch-capable device (phone / tablet)
+  const mouseCapable =
+    window.matchMedia('(any-hover: hover)').matches &&
+    window.matchMedia('(any-pointer: fine)').matches;
+  const touchCapable =
+    navigator.maxTouchPoints > 0 ||
+    'ontouchstart' in window ||
+    window.matchMedia('(any-pointer: coarse)').matches;
+  if (!mouseCapable && !touchCapable) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -85,6 +90,12 @@
     #qt-root.qt-down .qt-ring i { width: 22px; height: 22px; background: rgba(var(--qt-rgb), .28); }
     #qt-root.qt-down .qt-dot i  { transform: scale(1.5); }
 
+    /* Touch mode: ring is larger than a fingertip so it stays visible around it */
+    #qt-root.qt-touch .qt-glow i { width: 260px; height: 260px; }
+    #qt-root.qt-touch .qt-ring i { width: 76px; height: 76px; }
+    #qt-root.qt-touch.qt-hover .qt-ring i { width: 96px; height: 96px; }
+    #qt-root.qt-touch.qt-down .qt-ring i { width: 60px; height: 60px; background: rgba(var(--qt-rgb), .22); }
+
     .qt-ripple {
       position: absolute; width: 0; height: 0;
       display: flex; align-items: center; justify-content: center;
@@ -119,7 +130,9 @@
   const dot = mk('qt-dot'); dot.appendChild(mk('', 'i'));
   root.append(canvas, glow, ring, dot);
   document.body.appendChild(root);
-  document.documentElement.classList.add('qt-on');
+
+  // Hide the native cursor only on mouse-capable devices
+  if (mouseCapable) document.documentElement.classList.add('qt-on');
 
   /* ---------- State ---------- */
   const ctx = canvas.getContext('2d');
@@ -134,21 +147,44 @@
   window.addEventListener('resize', resize, { passive: true });
 
   const s = {
-    x: W / 2, y: H / 2,       // real pointer
+    x: W / 2, y: H / 2,       // real pointer / finger
     rx: W / 2, ry: H / 2,     // ring (follows with lag)
     gx: W / 2, gy: H / 2,     // glow (follows slower)
-    lx: W / 2, ly: H / 2,     // last frame pointer
+    lx: W / 2, ly: H / 2,     // last frame position
     seen: false, hover: false, hoverBoost: 0
   };
   const particles = [];
-  const MAX_PARTICLES = 140;
+  const MAX_DESKTOP = 140;
+  const MAX_TOUCH = 50;
+
+  // touchMode = last input was a finger (or the device has no mouse at all)
+  let touchMode = !mouseCapable;
+  if (touchMode) root.classList.add('qt-touch');
+  let fadeTimer = 0;
 
   const lerp = (a, b, t) => a + (b - a) * t;
   const mix = (a, b, t) => [lerp(a[0], b[0], t) | 0, lerp(a[1], b[1], t) | 0, lerp(a[2], b[2], t) | 0];
 
-  /* ---------- Events ---------- */
+  /* ---------- Animation loop (starts on input, sleeps when idle) ---------- */
+  let raf = 0, last = performance.now(), cleared = false;
+  const ensureLoop = () => {
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) ensureLoop(); });
+
+  const ripple = (x, y) => {
+    if (reduceMotion) return;
+    const r = mk('qt-ripple');
+    r.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    r.appendChild(mk('', 'i'));
+    root.appendChild(r);
+    r.addEventListener('animationend', () => r.remove(), { once: true });
+  };
+
+  /* ---------- Mouse events (desktop, unchanged behaviour) ---------- */
   window.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'touch') return;
+    if (touchMode) { touchMode = false; root.classList.remove('qt-touch'); }
     s.x = e.clientX; s.y = e.clientY;
     if (!s.seen) {
       s.seen = true;
@@ -156,9 +192,11 @@
       s.ry = s.gy = s.ly = s.y;
     }
     root.classList.add('qt-vis');
+    ensureLoop();
   }, { passive: true });
 
   document.addEventListener('mouseover', (e) => {
+    if (touchMode) return; // ignore compatibility mouse events fired after a tap
     const t = e.target;
     if (!(t instanceof Element)) return;
     s.hover = !!t.closest(HOVER_SEL);
@@ -166,28 +204,81 @@
     root.classList.toggle('qt-text', !!t.closest(TEXT_SEL));
   }, { passive: true });
 
-  document.addEventListener('mouseleave', () => root.classList.remove('qt-vis'));
-  document.addEventListener('mouseenter', () => { if (s.seen) root.classList.add('qt-vis'); });
+  document.addEventListener('mouseleave', () => { if (!touchMode) root.classList.remove('qt-vis'); });
+  document.addEventListener('mouseenter', () => { if (s.seen && !touchMode) root.classList.add('qt-vis'); });
   window.addEventListener('blur', () => root.classList.remove('qt-vis'));
 
   window.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'touch') return;
     root.classList.add('qt-down');
-    if (reduceMotion) return;
-    const r = mk('qt-ripple');
-    r.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
-    r.appendChild(mk('', 'i'));
-    root.appendChild(r);
-    r.addEventListener('animationend', () => r.remove(), { once: true });
+    ripple(e.clientX, e.clientY);
   }, { passive: true });
-  window.addEventListener('pointerup', () => root.classList.remove('qt-down'), { passive: true });
+  window.addEventListener('pointerup', (e) => {
+    if (e.pointerType === 'touch') return;
+    root.classList.remove('qt-down');
+  }, { passive: true });
 
-  /* ---------- Loop ---------- */
-  let last = performance.now();
+  /* ---------- Touch events (phones / tablets) ----------
+   * Passive listeners only: never blocks scrolling, zoom, taps or the menu.
+   * Touch events keep firing while the page scrolls, so the trail follows the finger. */
+  if (touchCapable) {
+    const setFromTouch = (t) => { s.x = t.clientX; s.y = t.clientY; };
 
-  const frame = (now) => {
-    requestAnimationFrame(frame);
-    if (document.hidden || !s.seen) return;
+    window.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      if (!t) return;
+      clearTimeout(fadeTimer);
+      touchMode = true;
+      root.classList.add('qt-touch');
+
+      setFromTouch(t);
+      s.seen = true;
+      s.rx = s.gx = s.lx = s.x;     // snap, so nothing flies in from the old position
+      s.ry = s.gy = s.ly = s.y;
+
+      const el = e.target instanceof Element ? e.target : null;
+      s.hover = !!(el && el.closest(HOVER_SEL));
+      root.classList.toggle('qt-hover', s.hover);
+      root.classList.toggle('qt-text', !!(el && el.closest(TEXT_SEL)));
+      root.classList.add('qt-vis', 'qt-down');
+
+      ripple(s.x, s.y);
+      ensureLoop();
+    }, { passive: true, capture: true });
+
+    window.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      if (!t) return;
+      setFromTouch(t);
+      ensureLoop();
+    }, { passive: true, capture: true });
+
+    const touchEnd = (e) => {
+      if (e.touches && e.touches.length > 0) { setFromTouch(e.touches[0]); return; } // another finger remains
+      root.classList.remove('qt-down');
+      clearTimeout(fadeTimer);
+      fadeTimer = setTimeout(() => {      // brief linger, then fade out (CSS opacity transition)
+        root.classList.remove('qt-vis');
+        s.hover = false;
+        root.classList.remove('qt-hover', 'qt-text');
+      }, 140);
+    };
+    window.addEventListener('touchend', touchEnd, { passive: true, capture: true });
+    window.addEventListener('touchcancel', touchEnd, { passive: true, capture: true });
+  }
+
+  /* ---------- Frame ---------- */
+  function frame(now) {
+    raf = 0;
+    if (document.hidden || !s.seen) return; // restarts on the next input
+
+    // Touch idle: nothing visible and no particles left -> stop the loop completely
+    if (touchMode && !root.classList.contains('qt-vis') && particles.length === 0) {
+      if (!cleared) { ctx.clearRect(0, 0, W, H); cleared = true; }
+      return;
+    }
+    cleared = false;
+    raf = requestAnimationFrame(frame);
 
     const dt = Math.min((now - last) / 16.67, 3); // frame-rate independent
     last = now;
@@ -211,11 +302,12 @@
 
     // Particle trail
     if (!reduceMotion) {
+      const cap = touchMode ? MAX_TOUCH : MAX_DESKTOP;
       const dx = s.x - s.lx, dy = s.y - s.ly;
       const speed = Math.hypot(dx, dy);
       if (speed > 1.2) {
-        const n = Math.min(4, 1 + (speed / 10) | 0);
-        for (let i = 0; i < n && particles.length < MAX_PARTICLES; i++) {
+        const n = Math.min(touchMode ? 3 : 4, 1 + (speed / 10) | 0);
+        for (let i = 0; i < n && particles.length < cap; i++) {
           const k = i / n;
           const hue = mix(GOLD, CYAN, (wave + Math.random() * 0.25) % 1);
           particles.push({
@@ -247,6 +339,5 @@
       }
       ctx.globalCompositeOperation = 'source-over';
     }
-  };
-  requestAnimationFrame(frame);
+  }
 })();
